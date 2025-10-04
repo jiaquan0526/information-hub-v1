@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Information Hub - Login</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"></noscript>
+    <meta name="supabase-url" content="">
+    <meta name="supabase-anon-key" content="">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo-container">
+                    <img src="logo.svg" alt="Company Logo" class="site-logo" decoding="async">
+                    <h1>Information Hub</h1>
+                </div>
+                <p id="authSubtitle">Please sign in to access your resources</p>
+            </div>
+
+            <div class="tab-switch" style="display:flex;gap:10px;justify-content:center;margin-bottom:12px;">
+                <button id="tabLogin" class="btn btn-secondary" type="button">Sign In</button>
+                <button id="tabSignup" class="btn btn-primary" type="button">Sign Up</button>
+            </div>
+
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="username">Email</label>
+                    <input type="email" id="username" name="username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary auth-btn">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
+                <div style="margin-top:8px;text-align:center;">
+                    <a href="#" id="forgotLink">Forgot password?</a>
+                </div>
+            </form>
+
+            <form id="signupForm" class="auth-form" style="display:none;">
+                <div class="form-group">
+                    <label for="signupName">Full Name</label>
+                    <input type="text" id="signupName" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" minlength="6" required>
+                </div>
+                <button type="submit" class="btn btn-primary auth-btn">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+            </form>
+
+            <form id="resetForm" class="auth-form" style="display:none;">
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" minlength="6" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm New Password</label>
+                    <input type="password" id="confirmPassword" minlength="6" required>
+                </div>
+                <button type="submit" class="btn btn-primary auth-btn">
+                    <i class="fas fa-key"></i> Set New Password
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        window.SUPABASE_URL = '';
+        window.SUPABASE_ANON_KEY = '';
+    </script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
+    <script>
+        (function(){
+            function ensureKeys(){
+                try {
+                    if (!window.SUPABASE_URL) window.SUPABASE_URL = localStorage.getItem('SUPABASE_URL') || document.querySelector('meta[name="supabase-url"]').content;
+                    if (!window.SUPABASE_ANON_KEY) window.SUPABASE_ANON_KEY = localStorage.getItem('SUPABASE_ANON_KEY') || document.querySelector('meta[name="supabase-anon-key"]').content;
+                } catch(_) {}
+            }
+            function initClient(){
+                ensureKeys();
+                try {
+                    if (window.supabase && !window.supabaseClient && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+                        window.supabaseClient = window.supabase.createClient(
+                            window.SUPABASE_URL,
+                            window.SUPABASE_ANON_KEY,
+                            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+                        );
+                    }
+                } catch(_) {}
+            }
+            function loadFallbacksIfNeeded(){
+                if (window.supabase) return initClient();
+                var tried = 0;
+                var cdns = [
+                    'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js'
+                ];
+                function next(){
+                    if (window.supabase) return initClient();
+                    if (tried < cdns.length){
+                        var s = document.createElement('script');
+                        s.src = cdns[tried++];
+                        s.async = true;
+                        s.onload = initClient;
+                        s.onerror = next;
+                        document.head.appendChild(s);
+                    } else {
+                        // ESM fallback
+                        var m = document.createElement('script');
+                        m.type = 'module';
+                        m.textContent = "import{createClient}from 'https://esm.sh/@supabase/supabase-js@2'; window.supabase={createClient}; window.dispatchEvent(new Event('supabase-ready'));";
+                        document.head.appendChild(m);
+                        window.addEventListener('supabase-ready', initClient, { once: true });
+                    }
+                }
+                next();
+            }
+            // If primary failed to load, try fallbacks
+            if (!(window.supabase && window.supabase.createClient)) {
+                loadFallbacksIfNeeded();
+            } else {
+                initClient();
+            }
+        })();
+    </script>
+    <script src="auth-script.js" defer></script>
+</body>
+</html>

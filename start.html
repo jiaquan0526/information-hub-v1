@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Information Hub - Entry Point</title>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"></noscript>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .entry-container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            max-width: 500px;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 10px;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="entry-container">
+        <h1><i class="fas fa-sitemap"></i> Information Hub</h1>
+        <div class="spinner"></div>
+        <p>Checking authentication status...</p>
+        <div id="manualEntry" style="display: none; margin-top: 20px;">
+            <p>Or manually choose an option:</p>
+            <a href="auth.html" class="btn">Login</a>
+            <a href="index.html" class="btn">Go to Hub</a>
+        </div>
+    </div>
+
+    <script>
+        (async function(){
+            // Prefer Supabase auth over local storage flags
+            try {
+                // Try to reuse global config if present; otherwise use meta tags
+                if (!window.SUPABASE_URL) {
+                    try { window.SUPABASE_URL = document.querySelector('meta[name="supabase-url"]').content; } catch(_) {}
+                }
+                if (!window.SUPABASE_ANON_KEY) {
+                    try { window.SUPABASE_ANON_KEY = document.querySelector('meta[name="supabase-anon-key"]').content; } catch(_) {}
+                }
+
+                // Load Supabase UMD if needed
+                if (!(window.supabase && window.supabase.createClient)) {
+                    await new Promise((resolve, reject) => {
+                        const s = document.createElement('script');
+                        s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
+                        s.async = true;
+                        s.onload = resolve;
+                        s.onerror = reject;
+                        document.head.appendChild(s);
+                    });
+                }
+
+                // Create client if not present and keys exist
+                if (!window.supabaseClient && window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase) {
+                    window.supabaseClient = window.supabase.createClient(
+                        window.SUPABASE_URL,
+                        window.SUPABASE_ANON_KEY,
+                        { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+                    );
+                }
+
+                // Check auth session with short retries to allow restoration
+                let user = null;
+                if (window.supabaseClient) {
+                    const start = Date.now();
+                    while (Date.now() - start < 3000) { // up to ~3s
+                        const { data: { user: u } } = await window.supabaseClient.auth.getUser();
+                        if (u) { user = u; break; }
+                        await new Promise(r => setTimeout(r, 150));
+                    }
+                }
+
+                // Redirect based on Supabase auth
+                if (user) {
+                    window.location.href = 'index.html';
+                } else {
+                    window.location.href = 'auth.html';
+                }
+            } catch (_) {
+                // Fallback to manual options if anything fails
+                setTimeout(() => { document.getElementById('manualEntry').style.display = 'block'; }, 500);
+            }
+        })();
+    </script>
+</body>
+</html>
+
